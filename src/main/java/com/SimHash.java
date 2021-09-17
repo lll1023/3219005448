@@ -1,8 +1,13 @@
 package com;
 
+import com.hankcs.hanlp.seg.common.Term;
+import com.hankcs.hanlp.tokenizer.StandardTokenizer;
+
 import java.math.BigInteger;
-import java.text.DecimalFormat;
-import java.util.StringTokenizer;
+import java.text.NumberFormat;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @Author: Lsutin
@@ -13,67 +18,100 @@ public class SimHash {
 
     private String tokens;
 
-    private BigInteger intSimHash;
-
-    private String strSimHash;
+    private BigInteger strSimHash;
 
     private int hashbits = 64;
 
-    private static final DecimalFormat format = new DecimalFormat("0.00");
+    private final static NumberFormat format = NumberFormat.getInstance();
+
+    static {
+        format.setMaximumFractionDigits(2);
+    }
 
     public SimHash(String tokens) {
         this.tokens = tokens;
-        this.intSimHash = this.simHash();
+        this.strSimHash = this.simHash();
     }
 
     public SimHash(String tokens, int hashbits) {
         this.tokens = tokens;
         this.hashbits = hashbits;
-        this.intSimHash = this.simHash();
+        this.strSimHash = this.simHash();
     }
 
+    /**
+     * 求得字符串的simHash值
+     * @return simHash
+     */
     private BigInteger simHash() {
-        // 定义特征向量/数组
+
         int[] v = new int[this.hashbits];
-        // 1、将文本去掉格式后, 分词.
-        StringTokenizer stringTokens = new StringTokenizer(this.tokens);
-        while (stringTokens.hasMoreTokens()) {
-            String temp = stringTokens.nextToken();
+
+        List<Term> termList = StandardTokenizer.segment(this.tokens); // 使用hanlp对字符串进行分词
+
+        //对分词的一些特殊处理 : 比如: 根据词性添加权重 , 过滤掉标点符号 , 过滤超频词汇等;
+        Map<String, Integer> weightOfNature = new HashMap<String, Integer>(); // 词性的权重
+        Map<String, String> stopNatures = new HashMap<String, String>();//停用的词性,如一些标点符号之类的;
+        Map<String, Integer> wordCount = new HashMap<String, Integer>();//超频词汇
+
+        for (Term term : termList) {
+            String word = term.word; //分词字符串
+
+            String nature = term.nature.toString(); // 分词属性;
+            //  过滤超频词
+            if (wordCount.containsKey(word)) {
+                continue;
+            }
+
+            // 过滤停用词性
+            if (stopNatures.containsKey(nature)) {
+                continue;
+            }
+
             // 2、将每一个分词hash为一组固定长度的数列.比如 64bit 的一个整数.
-            BigInteger t = this.hash(temp);
+            BigInteger t = this.hash(word);
             for (int i = 0; i < this.hashbits; i++) {
                 BigInteger bitmask = new BigInteger("1").shiftLeft(i);
                 // 3、建立一个长度为64的整数数组(假设要生成64位的数字指纹,也可以是其它数字),
                 // 对每一个分词hash后的数列进行判断,如果是1000...1,那么数组的第一位和末尾一位加1,
                 // 中间的62位减一,也就是说,逢1加1,逢0减1.一直到把所有的分词hash数列全部判断完毕.
+                int weight = 1;  //添加权重
+                if (weightOfNature.containsKey(nature)) {
+                    weight = weightOfNature.get(nature);
+                }
                 if (t.and(bitmask).signum() != 0) {
                     // 这里是计算整个文档的所有特征的向量和
-                    // 这里实际使用中需要 +- 权重，而不是简单的 +1/-1，
-                    v[i] += 1;
+                    v[i] += weight;
                 } else {
-                    v[i] -= 1;
+                    v[i] -= weight;
                 }
             }
         }
         BigInteger fingerprint = new BigInteger("0");
-        StringBuffer simHashBuffer = new StringBuffer();
+        //降维
         for (int i = 0; i < this.hashbits; i++) {
-            // 4、最后对数组进行判断,大于0的记为1,小于等于0的记为0,得到一个 64bit 的数字指纹/签名.
             if (v[i] >= 0) {
                 fingerprint = fingerprint.add(new BigInteger("1").shiftLeft(i));
-                simHashBuffer.append("1");
-            } else {
-                simHashBuffer.append("0");
             }
         }
-        this.strSimHash = simHashBuffer.toString();
         return fingerprint;
     }
 
+    /**
+     * 计算分词的hash
+     * @param source 分词
+     * @return hash
+     */
     private BigInteger hash(String source) {
         if (source == null || source.length() == 0) {
             return new BigInteger("0");
         } else {
+            /**
+             * 当sourece 的长度过短，会导致hash算法失效，因此需要对过短的词补偿
+             */
+            while (source.length() < 3) {
+                source = source + source.charAt(0);
+            }
             char[] sourceArray = source.toCharArray();
             BigInteger x = BigInteger.valueOf(((long) sourceArray[0]) << 7);
             BigInteger m = new BigInteger("1000003");
@@ -89,16 +127,17 @@ public class SimHash {
             return x;
         }
     }
-    //海明距离
+
+    /**
+     * 计算海明距离
+     * @param other 另一个simHash
+     * @return 海明距离
+     */
     private int hammingDistance(SimHash other) {
-
-        BigInteger x = this.intSimHash.xor(other.intSimHash);
+        BigInteger m = new BigInteger("1").shiftLeft(this.hashbits).subtract(
+                new BigInteger("1"));
+        BigInteger x = this.strSimHash.xor(other.strSimHash).and(m);
         int tot = 0;
-
-        // 统计x中二进制位数为1的个数
-        // 我们想想，一个二进制数减去1，那么，从最后那个1（包括那个1）后面的数字全都反了，对吧，然后，n&(n-1)就相当于把后面的数字清0，
-        // 我们看n能做多少次这样的操作就OK了。
-
         while (x.signum() != 0) {
             tot += 1;
             x = x.and(x.subtract(new BigInteger("1")));
@@ -106,11 +145,22 @@ public class SimHash {
         return tot;
     }
 
+    /**
+     * 求得文本相似度
+     * @param dis 海明距离
+     * @return 相似度
+     */
     private String getSemblance(int dis){
         double i=dis;
+        //精确小数点两位
         return format.format(1-i/this.hashbits);
     }
 
+    /**
+     * 只对外提供这一个求得文本相似度的方法
+     * @param other
+     * @return
+     */
     public String getSimilarity(SimHash other){
         return getSemblance(hammingDistance(other));
     }

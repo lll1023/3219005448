@@ -8,13 +8,14 @@ package com;
 public class MainProcess {
     public static void main(String[] args) {
         if(null==args||args.length<3){
-            System.out.println("输入格式错误，请重新尝试");
+            System.out.println("输入格式错误，请重新尝试\n进程退出");
+            System.exit(0);
         }
         String file1 = args[0];
         String file2 = args[1];
         String targetFile = args[2];
-        SimHash simHash1 = new SimHash(FileUtil.read(file1));
-        SimHash simHash2 = new SimHash(FileUtil.read(file2));
+        SimHash simHash1 = new SimHash(StringUtil.processFile(file1));
+        SimHash simHash2 = new SimHash(StringUtil.processFile(file2));
         String similarity = simHash1.getSimilarity(simHash2);
         StringBuilder builder = new StringBuilder();
         builder.append("原文文件：").append(file1).append("\n");
