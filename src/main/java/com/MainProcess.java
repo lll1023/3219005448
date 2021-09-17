@@ -8,8 +8,8 @@ package com;
 public class MainProcess {
     public static void main(String[] args) {
         if(null==args||args.length<3){
-            System.out.println("输入格式错误，请重新尝试\n进程退出");
-            System.exit(0);
+            System.out.println("输入格式错误，请重新尝试");
+            return;
         }
         String file1 = args[0];
         String file2 = args[1];
