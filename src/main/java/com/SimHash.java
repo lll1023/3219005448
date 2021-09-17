@@ -22,12 +22,6 @@ public class SimHash {
 
     private int hashbits = 64;
 
-    private final static NumberFormat format = NumberFormat.getInstance();
-
-    static {
-        format.setMaximumFractionDigits(2);
-    }
-
     public SimHash(String tokens) {
         this.tokens = tokens;
         this.strSimHash = this.simHash();
@@ -153,7 +147,7 @@ public class SimHash {
     private String getSemblance(int dis){
         double i=dis;
         //精确小数点两位
-        return format.format(1-i/this.hashbits);
+        return String.format("%.2f",1-i/this.hashbits);
     }
 
     /**
