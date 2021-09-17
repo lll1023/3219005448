@@ -9,20 +9,15 @@ import java.io.*;
  * @describe:
  */
 public class FileUtil {
-    public static String read(String name) {
-        if(null==name){
-            System.out.println("请输入正确的文件地址");
-            return null;
+    public static String read(String name) throws FileNotFoundException {
+        if (null==name){
+            throw new FileNotFoundException("文件名错误");
         }
         File file = new File(name);
-        if(!file.exists()){
-            System.out.println("文件："+name+" 不存在");
-            return null;
+        if(!file.exists()||!file.isFile()){
+            throw new FileNotFoundException("文件错误，请重新检查文件名或者该路径是否是文件夹");
         }
-        if(!file.isFile()){
-            System.out.println("路径："+name+" 不是文件");
-            return null;
-        }
+
         BufferedReader reader=null;
         StringBuilder builder = new StringBuilder();
         try {

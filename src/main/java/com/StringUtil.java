@@ -4,6 +4,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 
+import java.io.FileNotFoundException;
 import java.util.regex.Pattern;
 
 /**
@@ -44,11 +45,10 @@ public class StringUtil {
         }catch (NullPointerException e){
 
         }
-
         return context;
     }
 
-    public static String processFile(String file){
+    public static String processFile(String file) throws FileNotFoundException {
         return delHTML(FileUtil.read(file));
     }
 }

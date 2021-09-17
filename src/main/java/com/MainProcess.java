@@ -1,5 +1,7 @@
 package com;
 
+import java.io.FileNotFoundException;
+
 /**
  * @Author: Lsutin
  * @Date: 2021/9/16 9:36
@@ -14,8 +16,15 @@ public class MainProcess {
         String file1 = args[0];
         String file2 = args[1];
         String targetFile = args[2];
-        SimHash simHash1 = new SimHash(StringUtil.processFile(file1));
-        SimHash simHash2 = new SimHash(StringUtil.processFile(file2));
+        SimHash simHash1;
+        SimHash simHash2;
+        try {
+            simHash1 = new SimHash(StringUtil.processFile(file1));
+            simHash2 = new SimHash(StringUtil.processFile(file2));
+        }catch (FileNotFoundException e){
+            System.out.println(e.getMessage());
+            return;
+        }
         String similarity = simHash1.getSimilarity(simHash2);
         StringBuilder builder = new StringBuilder();
         builder.append("原文文件：").append(file1).append("\n");
