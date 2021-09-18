@@ -9,6 +9,12 @@ import java.io.*;
  * @describe:
  */
 public class FileUtil {
+    /**
+     * 读文件
+     * @param name
+     * @return
+     * @throws FileNotFoundException
+     */
     public static String read(String name) throws FileNotFoundException {
         if (null==name){
             throw new FileNotFoundException("文件名错误");
@@ -18,6 +24,7 @@ public class FileUtil {
             throw new FileNotFoundException("文件错误，请重新检查文件名或者该路径是否是文件夹");
         }
 
+        //读取文件内容
         BufferedReader reader=null;
         StringBuilder builder = new StringBuilder();
         try {
@@ -43,6 +50,11 @@ public class FileUtil {
         return builder.toString();
     }
 
+    /**
+     * 写文件
+     * @param name
+     * @param context
+     */
     public static void write(String name,String context){
         if(null==name||null==context){
             System.out.println("请输出正确的格式");
